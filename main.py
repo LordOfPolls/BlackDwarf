@@ -289,7 +289,7 @@ def __main__(
 
     print("====================================")
     print("Processing done, running black...")
-    subprocess.run(["black", "."])
+    subprocess.run(["black", path or "."])
 
 def entry_point():
     import argparse
