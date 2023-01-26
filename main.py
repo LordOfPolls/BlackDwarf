@@ -263,6 +263,7 @@ def __main__(
     module: str | None = None,
     dry_run: bool = True,
     infer_imports: bool = True,
+    no_format: bool = False,
 ) -> None:
     if module:
         importlib.import_module(module)
@@ -288,8 +289,11 @@ def __main__(
         )
 
     print("====================================")
-    print("Processing done, running black...")
-    subprocess.run(["black", path or "."])
+    if no_format:
+        print("Processing done, skipping black...")
+    else:
+        print("Processing done, running black...")
+        subprocess.run(["black", path or "."])
 
 def entry_point():
     import argparse
@@ -310,6 +314,13 @@ def entry_point():
         action="store_true",
         help="Infer __all__ from imports. (default: True)",
         default=True,
+    )
+    parser.add_argument(
+        "-nf",
+        "--no-format",
+        action="store_true",
+        help="Don't run black after processing. (default: False)",
+        default=False,
     )
     args = parser.parse_args()
 
@@ -344,6 +355,7 @@ ______ _            _   ______                     __
         module=args.module,
         dry_run=args.dry_run,
         infer_imports=args.infer_imports,
+        no_format=args.no_format,
     )
 
 if __name__ == "__main__":

@@ -5,12 +5,13 @@ BlackDwarf is a Python script that eliminates wildcard imports, also known as "s
 
 ## Usage
 
-    usage: blackdwarf [-d] [-i] target
+    usage: blackdwarf [-m] [-d] [-i] [-nf] target
 
     positional arguments:
       target                The directory to be processed
 
     optional arguments:
-      -m, --module          The module to be processed
-      -d, --dry-run         Dry run mode - No changes will be applied to disk
-      -i, --infer-imports   Disable inference of imports in situations where a file lacks `__all__`
+      -m,  --module          The module to be processed
+      -d,  --dry-run         Dry run mode - No changes will be applied to disk
+      -i,  --infer-imports   Disable inference of imports in situations where a file lacks `__all__`
+      -nf, --no-format      Disable formatting of the output file
