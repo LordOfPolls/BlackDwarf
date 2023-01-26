@@ -8,10 +8,6 @@ setup(
     description="A script to eliminate wildcard imports from Python code",
     license="MIT",
     keywords="python wildcard imports",
-    entry_points={
-        "console_scripts": [
-            "blackdwarf = main:entry_point"
-        ]
-    },
-    requires=["black"]
+    entry_points={"console_scripts": ["blackdwarf = main:entry_point"]},
+    requires=["black"],
 )

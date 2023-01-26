@@ -4,6 +4,7 @@ Eliminates wildcard imports from a provided target_file.
 wildcard imports are depicted as an import with an asterisk, or star, hence the name
 """
 import ast
+import difflib
 import importlib
 import importlib.util
 import os
@@ -109,8 +110,6 @@ def de_wildcard(
                     writer.writelines(buffer)
                 sys.modules.pop(".".join(full_path.split(os.sep)[:-1]), None)
             else:
-                import difflib
-
                 for line in difflib.unified_diff(
                     lines, buffer, fromfile=full_path, tofile=full_path
                 ):
@@ -295,6 +294,7 @@ def __main__(
         print("Processing done, running black...")
         subprocess.run(["black", path or "."])
 
+
 def entry_point():
     import argparse
 
@@ -332,7 +332,7 @@ ______ _            _   ______                     __
 | ___ \ |/ _` |/ __| |/ / | | \ \ /\ / / _` | '__|  _|
 | |_/ / | (_| | (__|   <| |/ / \ V  V / (_| | |  | |  
 \____/|_|\__,_|\___|_|\_\___/   \_/\_/ \__,_|_|  |_|  """
-    )
+    )  # noqa
 
     if os.path.isdir(args.path):
         path = Path(args.path)
@@ -357,6 +357,7 @@ ______ _            _   ______                     __
         infer_imports=args.infer_imports,
         no_format=args.no_format,
     )
+
 
 if __name__ == "__main__":
     entry_point()
