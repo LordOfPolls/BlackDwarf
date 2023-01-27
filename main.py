@@ -67,15 +67,15 @@ def de_wildcard(
 
     for wildcard_import in wildcard_imports:
         # recursively process the file and get the imports needed
-        _all_ = process_file(
+
+        if _all_ := process_file(
             target=wildcard_import.module,
             import_path=import_path,
             module_name=module_name,
             prefix=prefix,
             infer_imports=infer_imports,
             parent_tree=tree,
-        )
-        if _all_:
+        ):
             replacements.append(
                 Replacement(
                     lineno=wildcard_import.lineno,
@@ -114,7 +114,6 @@ def de_wildcard(
                     lines, buffer, fromfile=full_path, tofile=full_path
                 ):
                     sys.stdout.write(line)
-                pass
         return True
     return False
 
@@ -146,7 +145,7 @@ def process_file(
 
     try:
         child_m = importlib.import_module(f"{import_path}.{target}", module_name)
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as e:
         # if the module is not found, it's probably a library, attempt to find it
         with suppress(ModuleNotFoundError):
             if module := importlib.import_module(target):
@@ -161,7 +160,7 @@ def process_file(
                             f"{prefix}Found {len(usages)} usages of {target} in {import_path}.{module_name}"
                         )
                         return usages
-        raise RuntimeError(f"Could not process {target}!")
+        raise RuntimeError(f"Could not process {target}!") from e
 
     child_tree = ast.parse(open(child_m.__file__, encoding="utf-8").read())
     _all_ = get_dunder_all(child_tree)
@@ -270,9 +269,7 @@ def __main__(
     # find all python files and their relative paths
     found = []
     for root, dirs, files in os.walk(path or "."):
-        for file in files:
-            if file.endswith(".py"):
-                found.append((file, root))
+        found.extend((file, root) for file in files if file.endswith(".py"))
     print(f"Found {len(found)} files to process...")
 
     # sort by depth, so we process the deepest files first - this helps speed up processing
