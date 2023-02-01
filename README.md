@@ -14,4 +14,5 @@ BlackDwarf is a Python script that eliminates wildcard imports, also known as "s
       -m,  --module          The module to be processed
       -d,  --dry-run         Dry run mode - No changes will be applied to disk
       -i,  --infer-imports   Disable inference of imports in situations where a file lacks `__all__`
-      -nf, --no-format      Disable formatting of the output file
+      -nf, --no-format       Disable formatting of the output file
+      -ca, --create-all      Create `__all__` if it does not exist
