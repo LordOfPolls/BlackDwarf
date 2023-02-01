@@ -5,6 +5,7 @@ wildcard imports are depicted as an import with an asterisk, or star, hence the 
 """
 import ast
 import difflib
+import functools
 import importlib
 import importlib.util
 import os
@@ -37,6 +38,7 @@ def de_wildcard(
     infer_imports: bool = True,
     dry_run: bool = False,
     prefix: str = "",
+    create_all: bool = False,
 ) -> bool:
     """
     Eliminates wildcard imports from a provided target_file.
@@ -48,6 +50,7 @@ def de_wildcard(
         infer_imports: Whether or not to infer imports if __all__ is not found
         dry_run: Whether or not to actually write the changes
         prefix: The prefix to use for printing
+        create_all: Whether or not to create __all__ if it is not found
 
     Returns:
         True if changes were made, otherwise False
@@ -64,6 +67,8 @@ def de_wildcard(
         return False
 
     print(f"{prefix}Processing {import_path}.{target_file}...")
+
+    file_all = []
 
     for wildcard_import in wildcard_imports:
         # recursively process the file and get the imports needed
@@ -84,13 +89,27 @@ def de_wildcard(
                     module=wildcard_import.module,
                 )
             )
+            file_all.extend(_all_)
+    if create_all and not get_dunder_all(tree):
+        line_no = len(tree.body) + 1
+        replacements.append(
+            Replacement(
+                lineno=line_no,
+                endlineno=line_no,
+                content=f"\n__all__ = {repr(tuple(sorted(file_all, key=lambda x: x.lower())))}",
+                module=module_name,
+            )
+        )
 
     if replacements:
         with open(full_path, "r", encoding="utf-8") as reader:
             lines = reader.readlines()
             buffer = lines.copy()
             for replacement in replacements:
-                if f".{replacement.module}" in buffer[replacement.lineno - 1]:
+                if "__all__ = " in replacement.content:
+                    buffer.insert(replacement.lineno - 1, replacement.content + "\n")
+
+                elif f".{replacement.module}" in buffer[replacement.lineno - 1]:
                     # import is relative
                     replacement = Replacement(
                         lineno=replacement.lineno,
@@ -100,14 +119,15 @@ def de_wildcard(
                         ),
                         module=replacement.module,
                     )
-                buffer[replacement.lineno - 1 : replacement.endlineno] = [
-                    replacement.content + "\n"
-                ]
+                    buffer[replacement.lineno - 1 : replacement.endlineno] = [
+                        replacement.content + "\n"
+                    ]
 
             if not dry_run:
                 print(f"{prefix}Writing changes to {full_path}...")
                 with open(full_path, "w", encoding="utf-8") as writer:
                     writer.writelines(buffer)
+
                 sys.modules.pop(".".join(full_path.split(os.sep)[:-1]), None)
             else:
                 for line in difflib.unified_diff(
@@ -212,6 +232,7 @@ def search_for_usages(m: Module, targets: list[str]) -> list[str]:
     return list(used)
 
 
+@functools.lru_cache()
 def get_dunder_all(m: Module) -> list[str] | None:
     """
     Gets the __all__ attribute from a given module
@@ -262,6 +283,7 @@ def __main__(
     dry_run: bool = True,
     infer_imports: bool = True,
     no_format: bool = False,
+    create_all: bool = False,
 ) -> None:
     if module:
         importlib.import_module(module)
@@ -282,6 +304,7 @@ def __main__(
             module_name=module,
             infer_imports=infer_imports,
             dry_run=dry_run,
+            create_all=create_all,
         )
 
     print("====================================")
@@ -319,6 +342,13 @@ def entry_point():
         help="Don't run black after processing. (default: False)",
         default=False,
     )
+    parser.add_argument(
+        "-ca",
+        "--create-all",
+        action="store_true",
+        help="Generate __all__ for all files in the given path when missing. (default: False)",
+        default=False,
+    )
     args = parser.parse_args()
 
     print(
@@ -353,6 +383,7 @@ ______ _            _   ______                     __
         dry_run=args.dry_run,
         infer_imports=args.infer_imports,
         no_format=args.no_format,
+        create_all=args.create_all,
     )
 
 
