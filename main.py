@@ -4,6 +4,7 @@ Eliminates wildcard imports from a provided target_file.
 wildcard imports are depicted as an import with an asterisk, or star, hence the name
 """
 import ast
+import collections
 import difflib
 import functools
 import importlib
@@ -68,7 +69,7 @@ def de_wildcard(
 
     print(f"{prefix}Processing {import_path}.{target_file}...")
 
-    file_all = []
+    file_all: set = set()
 
     for wildcard_import in wildcard_imports:
         # recursively process the file and get the imports needed
@@ -89,9 +90,22 @@ def de_wildcard(
                     module=wildcard_import.module,
                 )
             )
-            file_all.extend(_all_)
+            new_all = list(file_all) + _all_
+            de_duplicate = set(new_all)
+            if len(de_duplicate) != len(new_all):
+                # find the duplicates
+                duplicates = [
+                    item
+                    for item, count in collections.Counter(new_all).items()
+                    if count > 1
+                ]
+                print(
+                    f"{prefix}WARNING: {wildcard_import.module} introduces duplicates to `__all__`: {duplicates}"
+                )
+            file_all = de_duplicate
     if create_all and not get_dunder_all(tree):
         line_no = len(tree.body) + 1
+
         replacements.append(
             Replacement(
                 lineno=line_no,
